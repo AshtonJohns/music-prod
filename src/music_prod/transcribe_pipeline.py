@@ -4,12 +4,12 @@ import argparse
 import shutil
 import subprocess
 import sys
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Iterable, Optional
 from urllib.parse import urlparse
 
 
-def run(cmd: list[str], *, cwd: Optional[Path] = None) -> None:
+def run(cmd: list[str], *, cwd: Path | None = None) -> None:
     """Run a command, streaming stdout/stderr. Raises on failure."""
     print("\n>>", " ".join(cmd))
     result = subprocess.run(cmd, cwd=str(cwd) if cwd else None)

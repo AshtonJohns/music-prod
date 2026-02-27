@@ -1,8 +1,9 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, asdict
-from pathlib import Path
 import json
+from dataclasses import asdict, dataclass
+from pathlib import Path
+
 
 @dataclass
 class KeyResult:
@@ -45,8 +46,8 @@ def _audio_key(audio_path: Path) -> KeyResult:
     Audio key estimate using chroma + a simple Krumhansl-Schmuckler style correlation.
     This is a reasonable baseline and works well for tonal material.
     """
-    import numpy as np
     import librosa
+    import numpy as np
 
     y, sr = librosa.load(str(audio_path), mono=True)
     chroma = librosa.feature.chroma_cqt(y=y, sr=sr)
