@@ -101,18 +101,18 @@ def main() -> int:
     )
     parser.add_argument(
         "--input-device",
-        required=True,
+        default="video=c922 Pro Stream Webcam",
         help=(
             "ffmpeg input device string. On Windows dshow, use a video device like "
-            "'video=c922 Pro Stream Webcam'."
+            "'video=c922 Pro Stream Webcam' (default: video=c922 Pro Stream Webcam)."
         ),
     )
     parser.add_argument(
         "--audio-device",
-        default=None,
+        default="Microphone (C922 Pro Stream Webcam)",
         help=(
-            "Optional dshow audio device name. If omitted and --input-device is 'video=...', "
-            "the same name is used for audio."
+            "Optional dshow audio device name (default: Microphone (C922 Pro Stream Webcam)). "
+            "If omitted and --input-device is 'video=...', the same name is used for audio."
         ),
     )
     parser.add_argument("--framerate", type=int, default=30, help="Capture FPS (default: 30).")

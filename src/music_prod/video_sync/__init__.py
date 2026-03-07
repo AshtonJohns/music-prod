@@ -1,7 +1,5 @@
+"""Video-to-WAV sync package."""
+
 from music_prod.video_sync.cli import main
 
 __all__ = ["main"]
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())

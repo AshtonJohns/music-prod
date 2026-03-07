@@ -120,32 +120,31 @@ uv run music-prod-cakewalk-video `
 
 ## Sync Camera Video With Cakewalk WAV
 
-This command detects offset using waveform cross-correlation, then writes an output video
-that keeps camera video and replaces audio with the Cakewalk WAV.
+This command detects the offset between the MP4 embedded webcam audio and an external WAV,
+then writes a corrected MP4 while leaving the WAV untouched.
+
+Behavior:
+- If MP4 leads WAV, MP4 start is trimmed.
+- If MP4 lags WAV, black video + silence are prepended to the MP4.
+- The MP4 keeps its original embedded audio content (shifted with the video timeline).
+- The WAV is never modified.
 
 ```powershell
 uv run music-prod-video-audio-sync `
-  --cakewalk-audio ".\projects\the_living_dead-ashton\Audio Export\the_living_dead-ashton.wav"
+  --video ".\projects\the_living_dead-ashton\Video\camera_raw.mp4" `
+  --audio ".\projects\the_living_dead-ashton\Audio Export\the_living_dead-ashton.wav" `
+  --output ".\projects\the_living_dead-ashton\Video\synced_output.mp4"
 ```
 
-Default camera video resolution rule when `--camera-video` is omitted:
+Important options:
 
-- Start from `--cakewalk-audio` file
-- Go to its parent's parent folder (project root)
-- Use `Video\camera_raw.mp4`
-
-Example:
-- Input audio: `projects\the_living_dead-ashton\Audio\vocals.wav`
-- Default video: `projects\the_living_dead-ashton\Video\camera_raw.mp4`
-
-You can override video and output paths:
-
-```powershell
-uv run music-prod-video-audio-sync `
-  --cakewalk-audio ".\projects\the_living_dead-ashton\Audio Export\the_living_dead-ashton.wav" `
-  --camera-video ".\projects\the_living_dead-ashton\Video\camera_raw.mp4" `
-  --output-file ".\projects\the_living_dead-ashton\Video\synced_output.mp4"
-```
+- `--report-json` writes a sidecar JSON report (default: `<output>.sync-report.json`)
+- `--sample-rate` analysis rate (default `16000`)
+- `--analysis-seconds` analyze only first N seconds
+- `--max-offset-seconds` lag search window
+- `--min-confidence` warns on low-confidence matches
+- `--dry-run` prints ffmpeg actions without writing corrected media
+- `--force` allows overwriting existing output
 
 
 ## Pipeline for New Projects
@@ -177,13 +176,21 @@ music-prod.exe `
 
 ```
 music-prod-cakewalk-setup.exe `
-  --stems-dir="/path/to/stems-dir" `
+  --stems-dir="./trascribe_out/10_stems/htdemucs/{htdemucs-generated-name}" `
   --song-name="{SONG_NAME}"
 ```
 
 #### Note that {SONG_NAME} matches the Cakewalk project!
 
 ➡️ music-prod-cakewalk-video.exe
+
+#### Before the song starts
+
+Make a visible and audible sync cue near the beginning of the take.
+
+- Clap once on camera
+- Or play a short beep/count-in into the room
+- Or say a slate and clap
 
 ```
 music-prod-cakewalk-video `
@@ -195,21 +202,23 @@ music-prod-cakewalk-video `
 
 ➡️ music-prod-video-audio-sync.exe
 
+
+This cue is what the sync tool should align to. Do not rely on passive waveform matching as the primary workflow.
+
 ```
 music-prod-video-audio-sync.exe `
-  --cakewalk-audio "C:\Users\ashto\Desktop\music-prod\projects\the_living_dead-ashton\Audio\the_living_dead-ashton, Lalala, Rec (143).wav" `
-  --sample-rate 96000
+  --video "C:\Users\ashto\Desktop\music-prod\projects\the_living_dead-ashton\Video\camera_raw.mp4" `
+  --audio "C:\Users\ashto\Desktop\music-prod\projects\the_living_dead-ashton\Audio\the_living_dead-ashton, Lalala, Rec (143).wav" `
+  --output "C:\Users\ashto\Desktop\music-prod\projects\the_living_dead-ashton\Video\synced_output.mp4" `
+  --sample-rate 16000
 ```
 
+<!-- #### Output expectations
+
+- The tool prints detected offset, confidence, and selected correction operation
+- A JSON report is written with offset, confidence, method, operation, and output path
+- If stream-copy trim is unsafe (trim point not keyframe), ffmpeg falls back to re-encode and logs why
+- Cakewalk audio remains production source and is never rewritten in place -->
 
 
 
-<!-- ➡️ music-prod-sync-capture.exe # TODO
-
-```
-uv run music-prod-sync-capture `
-  --cwp-audio "/path/to/audio-dir" `
-  --input-device "video=c922 Pro Stream Webcam" `
-  --inactivity-seconds 10
-
-``` -->

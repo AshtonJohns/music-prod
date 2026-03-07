@@ -30,6 +30,7 @@ music-prod-cakewalk-setup = "music_prod.cakewalk_setup:main"
 music-prod-sync-capture = "music_prod.sync_capture:main"
 music-prod-cakewalk-video = "music_prod.cakewalk_video:main"
 music-prod-video-audio-sync = "music_prod.video_audio_sync:main"
+sync-video-to-wav = "music_prod.video_sync.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
