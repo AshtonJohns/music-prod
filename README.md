@@ -100,6 +100,53 @@ uv run music-prod-sync-capture `
 - `--video-pixel-format`, `--video-profile`, `--video-level`: compatibility controls for capture output (defaults: `yuv420p`, `high`, `4.1`)
 - `--skip-mux`: only keep raw camera video (skip final trim output)
 
+## Simple Camera Video Capture (Video + Webcam Audio)
+
+Use this when you just want one raw camera file with embedded webcam audio:
+
+```powershell
+uv run music-prod-cakewalk-video `
+  --input-device "video=c922 Pro Stream Webcam" `
+  --output-file ".\projects\the_living_dead-ashton\Video\camera_raw.mp4"
+```
+
+If your webcam audio device name is different, set it explicitly:
+
+```powershell
+uv run music-prod-cakewalk-video `
+  --input-device "video=c922 Pro Stream Webcam" `
+  --audio-device "c922 Pro Stream Webcam"
+```
+
+## Sync Camera Video With Cakewalk WAV
+
+This command detects offset using waveform cross-correlation, then writes an output video
+that keeps camera video and replaces audio with the Cakewalk WAV.
+
+```powershell
+uv run music-prod-video-audio-sync `
+  --cakewalk-audio ".\projects\the_living_dead-ashton\Audio Export\the_living_dead-ashton.wav"
+```
+
+Default camera video resolution rule when `--camera-video` is omitted:
+
+- Start from `--cakewalk-audio` file
+- Go to its parent's parent folder (project root)
+- Use `Video\camera_raw.mp4`
+
+Example:
+- Input audio: `projects\the_living_dead-ashton\Audio\vocals.wav`
+- Default video: `projects\the_living_dead-ashton\Video\camera_raw.mp4`
+
+You can override video and output paths:
+
+```powershell
+uv run music-prod-video-audio-sync `
+  --cakewalk-audio ".\projects\the_living_dead-ashton\Audio Export\the_living_dead-ashton.wav" `
+  --camera-video ".\projects\the_living_dead-ashton\Video\camera_raw.mp4" `
+  --output-file ".\projects\the_living_dead-ashton\Video\synced_output.mp4"
+```
+
 
 ## Pipeline for New Projects
 
@@ -136,7 +183,28 @@ music-prod-cakewalk-setup.exe `
 
 #### Note that {SONG_NAME} matches the Cakewalk project!
 
-➡️ music-prod-sync-capture.exe # TODO
+➡️ music-prod-cakewalk-video.exe
+
+```
+music-prod-cakewalk-video `
+  --output-file "./projects/{SONG_NAME-SINGER}/Video/camera_raw.mp4" `
+  --input-device "video=c922 Pro Stream Webcam" `
+  --audio-device "Microphone (C922 Pro Stream Webcam)"
+```
+
+
+➡️ music-prod-video-audio-sync.exe
+
+```
+music-prod-video-audio-sync.exe `
+  --cakewalk-audio "C:\Users\ashto\Desktop\music-prod\projects\the_living_dead-ashton\Audio\the_living_dead-ashton, Lalala, Rec (143).wav" `
+  --sample-rate 96000
+```
+
+
+
+
+<!-- ➡️ music-prod-sync-capture.exe # TODO
 
 ```
 uv run music-prod-sync-capture `
@@ -144,4 +212,4 @@ uv run music-prod-sync-capture `
   --input-device "video=c922 Pro Stream Webcam" `
   --inactivity-seconds 10
 
-```
+``` -->

@@ -13,6 +13,8 @@ dependencies = [
     "torchcodec",
     "music21>=9.9.1",
     "librosa>=0.11.0",
+    "numpy>=1.24.0",
+    "scipy>=1.10.0",
     "watchdog>=4.0.0",
 ]
 
@@ -26,6 +28,8 @@ dev = [
 music-prod = "music_prod.transcribe_pipeline:main"
 music-prod-cakewalk-setup = "music_prod.cakewalk_setup:main"
 music-prod-sync-capture = "music_prod.sync_capture:main"
+music-prod-cakewalk-video = "music_prod.cakewalk_video:main"
+music-prod-video-audio-sync = "music_prod.video_audio_sync:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

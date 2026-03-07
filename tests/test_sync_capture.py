@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from music_prod.sync_capture import FileSnapshot, _build_mux_cmd, _build_record_cmd, _is_stable
+from music_prod.sync_capture import FileSnapshot, _build_record_cmd, _build_trim_cmd, _is_stable
 
 
 def test_build_record_cmd_includes_optional_video_size(tmp_path: Path) -> None:
@@ -24,56 +24,21 @@ def test_build_record_cmd_includes_optional_video_size(tmp_path: Path) -> None:
     assert str(output_file) in cmd
 
 
-def test_build_mux_cmd_shortest_toggle(tmp_path: Path) -> None:
+def test_build_trim_cmd_uses_accurate_trim_filter(tmp_path: Path) -> None:
     raw_video = tmp_path / "raw.mp4"
-    audio = tmp_path / "rec.wav"
-    output = tmp_path / "mux.mp4"
+    output = tmp_path / "trim.mp4"
 
-    with_shortest = _build_mux_cmd(
+    cmd = _build_trim_cmd(
         ffmpeg_bin="ffmpeg",
         raw_video=raw_video,
-        audio_file=audio,
         output_file=output,
-        audio_codec="aac",
-        audio_bitrate="192k",
-        shortest=True,
-        trim_start_s=0.0,
-    )
-    without_shortest = _build_mux_cmd(
-        ffmpeg_bin="ffmpeg",
-        raw_video=raw_video,
-        audio_file=audio,
-        output_file=output,
-        audio_codec="aac",
-        audio_bitrate="192k",
-        shortest=False,
-        trim_start_s=0.0,
-    )
-
-    assert "-shortest" in with_shortest
-    assert "-shortest" not in without_shortest
-
-
-def test_build_mux_cmd_uses_accurate_trim_filter_when_trim_requested(tmp_path: Path) -> None:
-    raw_video = tmp_path / "raw.mp4"
-    audio = tmp_path / "rec.wav"
-    output = tmp_path / "mux.mp4"
-
-    cmd = _build_mux_cmd(
-        ffmpeg_bin="ffmpeg",
-        raw_video=raw_video,
-        audio_file=audio,
-        output_file=output,
-        audio_codec="aac",
-        audio_bitrate="192k",
-        shortest=True,
         trim_start_s=1.25,
     )
 
     assert "-filter_complex" in cmd
     assert "[0:v]trim=start=1.250,setpts=PTS-STARTPTS[vtrim]" in cmd
     assert "[vtrim]" in cmd
-    assert "copy" not in cmd
+    assert str(output) == cmd[-1]
 
 
 def test_is_stable_detects_size_or_mtime_changes(tmp_path: Path) -> None:
