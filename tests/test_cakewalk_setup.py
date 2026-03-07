@@ -32,6 +32,7 @@ def test_setup_creates_project_and_copies_audio_and_cwp(tmp_path: Path) -> None:
     project_dir = Path(result["project_dir"])
     assert project_dir.exists()
     assert (project_dir / "Audio" / "beat.mp3").read_bytes() == b"fake-audio"
+    assert (project_dir / "Video").is_dir()
     assert (project_dir / "Demo_Song.cwp").read_bytes() == b"fake-project"
     assert (project_dir / "project_setup.json").exists()
 
@@ -76,6 +77,7 @@ def test_setup_from_stems_copies_all_wav_files(tmp_path: Path) -> None:
     project_dir = Path(result["project_dir"])
     assert (project_dir / "Audio" / "bass.wav").read_bytes() == b"bass"
     assert (project_dir / "Audio" / "drums.wav").read_bytes() == b"drums"
+    assert (project_dir / "Video").is_dir()
     assert not (project_dir / "Audio" / "notes.txt").exists()
     assert len(result["stems_copied"]) == 2
 

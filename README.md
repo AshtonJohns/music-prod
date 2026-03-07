@@ -24,6 +24,7 @@ uv run music-prod-cakewalk-setup ".\my_song_instrumental.mp3" --template ".\temp
 
 This creates:
 - `projects/<SongName>/Audio/<instrumental file>`
+- `projects/<SongName>/Video/`
 - `projects/<SongName>/Template/<template file>` (for `.cwt`) or `projects/<SongName>/<SongName>.cwp` (for `.cwp`)
 - `projects/<SongName>/project_setup.json`
 
@@ -221,5 +222,4 @@ music-prod-video-audio-sync.exe `
 - A JSON report is written with offset, confidence, method, operation, and output path
 - If stream-copy trim is unsafe (trim point not keyframe), ffmpeg falls back to re-encode and logs why
 - Cakewalk audio remains production source and is never rewritten in place -->
-
 

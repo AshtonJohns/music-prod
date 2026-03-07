@@ -124,6 +124,7 @@ def setup_cakewalk_project(
     project_dir = root / project_name
     audio_dir = project_dir / "Audio"
     template_dir = project_dir / "Template"
+    video_dir = project_dir / "Video"
 
     if project_dir.exists() and not force:
         raise FileExistsError(
@@ -132,6 +133,7 @@ def setup_cakewalk_project(
 
     audio_dir.mkdir(parents=True, exist_ok=True)
     template_dir.mkdir(parents=True, exist_ok=True)
+    video_dir.mkdir(parents=True, exist_ok=True)
 
     copied_audio = audio_dir / source.name
     _copy_audio_with_lead_in(source, copied_audio, lead_in_seconds)
@@ -182,6 +184,7 @@ def setup_cakewalk_project_from_stems(
     project_dir = root / project_name
     audio_dir = project_dir / "Audio"
     template_dir = project_dir / "Template"
+    video_dir = project_dir / "Video"
 
     if project_dir.exists() and not force:
         raise FileExistsError(
@@ -190,6 +193,7 @@ def setup_cakewalk_project_from_stems(
 
     audio_dir.mkdir(parents=True, exist_ok=True)
     template_dir.mkdir(parents=True, exist_ok=True)
+    video_dir.mkdir(parents=True, exist_ok=True)
 
     copied_stems: list[Path] = []
     for wav_file in wav_files:
