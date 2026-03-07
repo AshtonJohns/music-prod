@@ -3,6 +3,8 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import shutil
+import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -17,6 +19,32 @@ def slugify_name(raw: str) -> str:
 
 def _copy_file(source: Path, destination: Path) -> None:
     destination.write_bytes(source.read_bytes())
+
+
+def _require_ffmpeg() -> str:
+    ffmpeg = shutil.which("ffmpeg")
+    if ffmpeg:
+        return ffmpeg
+    raise RuntimeError("ffmpeg not found on PATH. Install ffmpeg first.")
+
+
+def _copy_audio_with_lead_in(source: Path, destination: Path, lead_in_seconds: float) -> None:
+    if lead_in_seconds <= 0:
+        _copy_file(source, destination)
+        return
+
+    ffmpeg = _require_ffmpeg()
+    delay_ms = int(round(lead_in_seconds * 1000))
+    cmd = [
+        ffmpeg,
+        "-y",
+        "-i",
+        str(source),
+        "-af",
+        f"adelay={delay_ms}:all=true",
+        str(destination),
+    ]
+    subprocess.run(cmd, check=True)
 
 
 def _copy_template(
@@ -58,11 +86,13 @@ def _build_summary(
     instrumental_copy: Path | None = None,
     stems_source_dir: Path | None = None,
     stems_copied: list[Path] | None = None,
+    lead_in_seconds: float = 0.0,
 ) -> dict[str, object]:
     return {
         "created_at_utc": datetime.now(timezone.utc).isoformat(),
         "project_name": project_name,
         "project_dir": str(project_dir),
+        "lead_in_seconds": lead_in_seconds,
         "instrumental_source": str(instrumental_source) if instrumental_source else "",
         "instrumental_copy": str(instrumental_copy) if instrumental_copy else "",
         "stems_source_dir": str(stems_source_dir) if stems_source_dir else "",
@@ -82,6 +112,7 @@ def setup_cakewalk_project(
     template: Path | None = None,
     song_name: str | None = None,
     force: bool = False,
+    lead_in_seconds: float = 0.0,
 ) -> dict[str, object]:
     """Create a new Cakewalk-ready project folder from an instrumental and optional template."""
     source = instrumental.expanduser().resolve()
@@ -103,7 +134,7 @@ def setup_cakewalk_project(
     template_dir.mkdir(parents=True, exist_ok=True)
 
     copied_audio = audio_dir / source.name
-    _copy_file(source, copied_audio)
+    _copy_audio_with_lead_in(source, copied_audio, lead_in_seconds)
     copied_template, project_file = _copy_template(
         template=template,
         project_dir=project_dir,
@@ -117,6 +148,7 @@ def setup_cakewalk_project(
         project_file=project_file,
         instrumental_source=source,
         instrumental_copy=copied_audio,
+        lead_in_seconds=lead_in_seconds,
     )
 
     metadata_path = project_dir / "project_setup.json"
@@ -132,6 +164,7 @@ def setup_cakewalk_project_from_stems(
     template: Path | None = None,
     song_name: str | None = None,
     force: bool = False,
+    lead_in_seconds: float = 0.0,
 ) -> dict[str, object]:
     """Create a Cakewalk-ready project folder by copying all .wav stems from a folder."""
     source_dir = stems_dir.expanduser().resolve()
@@ -161,7 +194,7 @@ def setup_cakewalk_project_from_stems(
     copied_stems: list[Path] = []
     for wav_file in wav_files:
         destination = audio_dir / wav_file.name
-        _copy_file(wav_file, destination)
+        _copy_audio_with_lead_in(wav_file, destination, lead_in_seconds)
         copied_stems.append(destination)
 
     copied_template, project_file = _copy_template(
@@ -177,6 +210,7 @@ def setup_cakewalk_project_from_stems(
         project_file=project_file,
         stems_source_dir=source_dir,
         stems_copied=copied_stems,
+        lead_in_seconds=lead_in_seconds,
     )
 
     metadata_path = project_dir / "project_setup.json"
@@ -208,11 +242,20 @@ def main() -> int:
     parser.add_argument("--template", help="Optional Cakewalk template/project file (.cwt or .cwp)")
     parser.add_argument("--song-name", help="Override project folder name")
     parser.add_argument(
+        "--lead-in-seconds",
+        type=float,
+        default=10.0,
+        help="Seconds of silence to prepend to copied audio files (default: 10).",
+    )
+    parser.add_argument(
         "--force",
         action="store_true",
         help="Allow reusing an existing project folder",
     )
     args = parser.parse_args()
+
+    if args.lead_in_seconds < 0:
+        parser.error("--lead-in-seconds must be >= 0")
 
     if bool(args.instrumental) == bool(args.stems_dir):
         parser.error("Provide exactly one input: positional 'instrumental' OR '--stems-dir'.")
@@ -224,6 +267,7 @@ def main() -> int:
             template=Path(args.template) if args.template else None,
             song_name=args.song_name,
             force=args.force,
+            lead_in_seconds=args.lead_in_seconds,
         )
     else:
         result = setup_cakewalk_project(
@@ -232,6 +276,7 @@ def main() -> int:
             template=Path(args.template) if args.template else None,
             song_name=args.song_name,
             force=args.force,
+            lead_in_seconds=args.lead_in_seconds,
         )
 
     print("Created project:", result["project_dir"])

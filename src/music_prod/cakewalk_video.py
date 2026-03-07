@@ -33,6 +33,7 @@ def _build_record_cmd(
     output_path: Path,
     input_format: str,
     input_device: str,
+    input_vcodec: str | None,
     framerate: int,
     video_size: str | None,
     video_codec: str,
@@ -49,6 +50,13 @@ def _build_record_cmd(
         "-y",
         "-f",
         input_format,
+    ]
+    if input_vcodec:
+        cmd += [
+            "-input_format",
+            input_vcodec,
+        ]
+    cmd += [
         "-framerate",
         str(framerate),
     ]
@@ -115,15 +123,20 @@ def main() -> int:
             "If omitted and --input-device is 'video=...', the same name is used for audio."
         ),
     )
+    parser.add_argument(
+        "--input-vcodec",
+        default="mjpeg",
+        help="Requested camera input codec for capture (default: mjpeg).",
+    )
     parser.add_argument("--framerate", type=int, default=30, help="Capture FPS (default: 30).")
     parser.add_argument(
         "--video-size",
-        default=None,
-        help='Optional capture size, e.g. "1920x1080".',
+        default="1920x1080",
+        help='Capture size (default: "1920x1080").',
     )
     parser.add_argument("--video-codec", default="libx264", help="Video codec (default: libx264).")
-    parser.add_argument("--preset", default="fast", help="Video preset (default: fast).")
-    parser.add_argument("--crf", type=int, default=18, help="Video quality CRF (default: 18).")
+    parser.add_argument("--preset", default="slow", help="Video preset (default: slow).")
+    parser.add_argument("--crf", type=int, default=14, help="Video quality CRF (default: 14).")
     parser.add_argument(
         "--video-pixel-format",
         default="yuv420p",
@@ -132,7 +145,7 @@ def main() -> int:
     parser.add_argument("--video-profile", default="high", help="H.264 profile (default: high).")
     parser.add_argument("--video-level", default="4.1", help="H.264 level (default: 4.1).")
     parser.add_argument("--audio-codec", default="aac", help="Audio codec (default: aac).")
-    parser.add_argument("--audio-bitrate", default="192k", help="Audio bitrate (default: 192k).")
+    parser.add_argument("--audio-bitrate", default="320k", help="Audio bitrate (default: 320k).")
 
     args = parser.parse_args()
 
@@ -149,11 +162,14 @@ def main() -> int:
     output_file = Path(args.output_file).expanduser().resolve()
     output_file.parent.mkdir(parents=True, exist_ok=True)
 
+    input_vcodec = args.input_vcodec if args.input_format == "dshow" else None
+
     cmd = _build_record_cmd(
         ffmpeg_bin=ffmpeg_bin,
         output_path=output_file,
         input_format=args.input_format,
         input_device=input_device,
+        input_vcodec=input_vcodec,
         framerate=args.framerate,
         video_size=args.video_size,
         video_codec=args.video_codec,

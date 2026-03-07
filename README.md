@@ -27,6 +27,9 @@ This creates:
 - `projects/<SongName>/Template/<template file>` (for `.cwt`) or `projects/<SongName>/<SongName>.cwp` (for `.cwp`)
 - `projects/<SongName>/project_setup.json`
 
+By default, `music-prod-cakewalk-setup` prepends `10` seconds of silence to copied audio files.
+Use `--lead-in-seconds` to override (or `0` to disable).
+
 ## Local Quality Checks (No CI Required)
 
 ```powershell
@@ -177,6 +180,7 @@ music-prod.exe `
 ```
 music-prod-cakewalk-setup.exe `
   --stems-dir="./trascribe_out/10_stems/htdemucs/{htdemucs-generated-name}" `
+  --lead-in-seconds=10 `
   --song-name="{SONG_NAME}"
 ```
 
@@ -195,8 +199,6 @@ Make a visible and audible sync cue near the beginning of the take.
 ```
 music-prod-cakewalk-video `
   --output-file "./projects/{SONG_NAME-SINGER}/Video/camera_raw.mp4" `
-  --input-device "video=c922 Pro Stream Webcam" `
-  --audio-device "Microphone (C922 Pro Stream Webcam)"
 ```
 
 
@@ -219,6 +221,5 @@ music-prod-video-audio-sync.exe `
 - A JSON report is written with offset, confidence, method, operation, and output path
 - If stream-copy trim is unsafe (trim point not keyframe), ffmpeg falls back to re-encode and logs why
 - Cakewalk audio remains production source and is never rewritten in place -->
-
 
 
