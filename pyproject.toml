@@ -7,6 +7,8 @@ name = "music-prod"
 version = "0.2.0"
 requires-python = ">=3.10"
 dependencies = [
+    "fastapi>=0.115.0",
+    "uvicorn>=0.30.0",
     "basic-pitch>=0.4.0",
     "demucs>=4.0.1",
     "yt-dlp>=2025.12.8",
@@ -31,6 +33,7 @@ music-prod-sync-capture = "music_prod.sync_capture:main"
 music-prod-cakewalk-video = "music_prod.cakewalk_video:main"
 music-prod-video-audio-sync = "music_prod.video_audio_sync:main"
 sync-video-to-wav = "music_prod.video_sync.cli:main"
+music-prod-web = "music_prod.web_app:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

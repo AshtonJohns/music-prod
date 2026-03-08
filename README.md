@@ -12,6 +12,30 @@ Installed via `pyproject.toml`:
 - demucs
 - basic-pitch
 - watchdog
+- fastapi
+- uvicorn
+
+## Web GUI Runner
+
+Run all main tools from a browser UI:
+
+```powershell
+uv sync --extra dev
+uv run music-prod-web
+```
+
+Then open:
+
+```
+http://127.0.0.1:8000
+```
+
+The page lets you launch these tools as background jobs and view logs/status:
+- `music-prod` (transcribe pipeline)
+- `music-prod-cakewalk-setup`
+- `music-prod-cakewalk-video`
+- `music-prod-sync-capture`
+- `music-prod-video-audio-sync`
 
 ## Cakewalk Workspace Bootstrap
 
@@ -222,4 +246,3 @@ music-prod-video-audio-sync.exe `
 - A JSON report is written with offset, confidence, method, operation, and output path
 - If stream-copy trim is unsafe (trim point not keyframe), ffmpeg falls back to re-encode and logs why
 - Cakewalk audio remains production source and is never rewritten in place -->
-
