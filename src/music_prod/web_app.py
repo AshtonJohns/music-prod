@@ -296,7 +296,9 @@ def _render_page(error: str | None, jobs: list[Job]) -> str:
     body {{ margin: 0; background: var(--bg); color: var(--ink); font-family: Segoe UI, Arial, sans-serif; }}
     main {{ max-width: 1100px; margin: 0 auto; padding: 20px; }}
     h1, h2 {{ margin: 0 0 12px; }}
-    .grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; }}
+    .layout {{ display: grid; grid-template-columns: minmax(460px, 1fr) minmax(420px, 520px); gap: 14px; align-items: start; }}
+    .left-grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; }}
+    .right-panel {{ position: sticky; top: 12px; max-height: calc(100vh - 24px); overflow: auto; }}
     .card {{ background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 12px; }}
     label {{ display: block; font-size: 12px; color: var(--muted); margin: 8px 0 4px; }}
     input, select {{ width: 100%; box-sizing: border-box; padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px; }}
@@ -312,6 +314,10 @@ def _render_page(error: str | None, jobs: list[Job]) -> str:
     .status.succeeded {{ color: var(--ok); }}
     .status.failed {{ color: var(--err); }}
     pre {{ background: #0f172a; color: #d1fae5; border-radius: 6px; padding: 8px; max-height: 220px; overflow: auto; }}
+    @media (max-width: 1100px) {{
+      .layout {{ grid-template-columns: 1fr; }}
+      .right-panel {{ position: static; max-height: none; }}
+    }}
   </style>
 </head>
 <body>
@@ -320,73 +326,77 @@ def _render_page(error: str | None, jobs: list[Job]) -> str:
   <p>Runs existing CLI tools in background jobs.</p>
   {error_block}
 
-  <div class="grid">
-    <form class="card" method="post" action="/run/transcribe">
-      <h2>Transcribe Pipeline</h2>
-      <label>Input URL or file</label><input name="input" required />
-      <label>Workdir</label><input name="workdir" value="transcribe_out" />
-      <label>Model</label><input name="model" value="htdemucs" />
-      <label>Device</label><input name="device" value="auto" />
-      <label>Stems</label><input name="stems" value="vocals,bass,other" />
-      <div class="check"><input type="checkbox" name="analyze_key" id="analyze_key" /><label for="analyze_key">Analyze key</label></div>
-      <label>Key source</label><select name="key_source"><option value="midi">midi</option><option value="audio">audio</option><option value="both">both</option></select>
-      <label>Key stems</label><input name="key_stems" value="bass,other" />
-      <button type="submit">Run</button>
-    </form>
+  <div class="layout">
+    <div class="left-grid">
+      <form class="card" method="post" action="/run/transcribe">
+        <h2>Transcribe Pipeline</h2>
+        <label>Input URL or file</label><input name="input" required />
+        <label>Workdir</label><input name="workdir" value="transcribe_out" />
+        <label>Model</label><input name="model" value="htdemucs" />
+        <label>Device</label><input name="device" value="auto" />
+        <label>Stems</label><input name="stems" value="vocals,bass,other" />
+        <div class="check"><input type="checkbox" name="analyze_key" id="analyze_key" /><label for="analyze_key">Analyze key</label></div>
+        <label>Key source</label><select name="key_source"><option value="midi">midi</option><option value="audio">audio</option><option value="both">both</option></select>
+        <label>Key stems</label><input name="key_stems" value="bass,other" />
+        <button type="submit">Run</button>
+      </form>
 
-    <form class="card" method="post" action="/run/cakewalk_setup">
-      <h2>Cakewalk Setup</h2>
-      <label>Mode</label><select name="input_mode"><option value="instrumental">instrumental</option><option value="stems">stems dir</option></select>
-      <label>Instrumental file</label><input name="instrumental" />
-      <label>Stems dir</label><input name="stems_dir" />
-      <label>Projects root</label><input name="projects_root" value="projects" />
-      <label>Template (.cwt/.cwp)</label><input name="template" />
-      <label>Song name</label><input name="song_name" />
-      <label>Lead-in seconds</label><input name="lead_in_seconds" value="10" />
-      <div class="check"><input type="checkbox" name="force" id="cw_force" /><label for="cw_force">Force reuse existing folder</label></div>
-      <button type="submit">Run</button>
-    </form>
+      <form class="card" method="post" action="/run/cakewalk_setup">
+        <h2>Cakewalk Setup</h2>
+        <label>Mode</label><select name="input_mode"><option value="instrumental">instrumental</option><option value="stems">stems dir</option></select>
+        <label>Instrumental file</label><input name="instrumental" />
+        <label>Stems dir</label><input name="stems_dir" />
+        <label>Projects root</label><input name="projects_root" value="projects" />
+        <label>Template (.cwt/.cwp)</label><input name="template" />
+        <label>Song name</label><input name="song_name" />
+        <label>Lead-in seconds</label><input name="lead_in_seconds" value="10" />
+        <div class="check"><input type="checkbox" name="force" id="cw_force" /><label for="cw_force">Force reuse existing folder</label></div>
+        <button type="submit">Run</button>
+      </form>
 
-    <form class="card" method="post" action="/run/cakewalk_video">
-      <h2>Cakewalk Video</h2>
-      <label>Output file</label><input name="output_file" required />
-      <label>Input device</label><input name="input_device" value="video=c922 Pro Stream Webcam" required />
-      <label>Audio device</label><input name="audio_device" value="Microphone (C922 Pro Stream Webcam)" />
-      <label>Input format</label><input name="input_format" value="dshow" />
-      <button type="submit">Run</button>
-    </form>
+      <form class="card" method="post" action="/run/cakewalk_video">
+        <h2>Cakewalk Video</h2>
+        <label>Output file</label><input name="output_file" required />
+        <label>Input device</label><input name="input_device" value="video=c922 Pro Stream Webcam" required />
+        <label>Audio device</label><input name="audio_device" value="Microphone (C922 Pro Stream Webcam)" />
+        <label>Input format</label><input name="input_format" value="dshow" />
+        <button type="submit">Run</button>
+      </form>
 
-    <form class="card" method="post" action="/run/sync_capture">
-      <h2>Sync Capture</h2>
-      <label>Audio file (exclusive with cwp audio)</label><input name="audio_file" />
-      <label>CWP audio dir (exclusive with audio file)</label><input name="cwp_audio" />
-      <label>Input device</label><input name="input_device" required />
-      <label>Input format</label><input name="input_format" value="dshow" />
-      <label>Output dir</label><input name="output_dir" />
-      <label>Inactivity seconds</label><input name="inactivity_seconds" value="5" />
-      <label>Poll seconds</label><input name="poll_seconds" value="0.5" />
-      <div class="check"><input type="checkbox" name="skip_mux" id="skip_mux" /><label for="skip_mux">Skip mux</label></div>
-      <button type="submit">Run</button>
-    </form>
+      <form class="card" method="post" action="/run/sync_capture">
+        <h2>Sync Capture</h2>
+        <label>Audio file (exclusive with cwp audio)</label><input name="audio_file" />
+        <label>CWP audio dir (exclusive with audio file)</label><input name="cwp_audio" />
+        <label>Input device</label><input name="input_device" required />
+        <label>Input format</label><input name="input_format" value="dshow" />
+        <label>Output dir</label><input name="output_dir" />
+        <label>Inactivity seconds</label><input name="inactivity_seconds" value="5" />
+        <label>Poll seconds</label><input name="poll_seconds" value="0.5" />
+        <div class="check"><input type="checkbox" name="skip_mux" id="skip_mux" /><label for="skip_mux">Skip mux</label></div>
+        <button type="submit">Run</button>
+      </form>
 
-    <form class="card" method="post" action="/run/video_audio_sync">
-      <h2>Video Audio Sync</h2>
-      <label>Video path</label><input name="video" required />
-      <label>Audio path</label><input name="audio" required />
-      <label>Output path</label><input name="output" required />
-      <label>Sample rate</label><input name="sample_rate" value="16000" />
-      <label>Analysis seconds</label><input name="analysis_seconds" />
-      <label>Max offset seconds</label><input name="max_offset_seconds" value="120" />
-      <label>Min confidence</label><input name="min_confidence" value="0.2" />
-      <div class="check"><input type="checkbox" name="dry_run" id="dry_run" /><label for="dry_run">Dry run</label></div>
-      <div class="check"><input type="checkbox" name="force" id="vas_force" /><label for="vas_force">Force overwrite</label></div>
-      <button type="submit">Run</button>
-    </form>
-  </div>
+      <form class="card" method="post" action="/run/video_audio_sync">
+        <h2>Video Audio Sync</h2>
+        <label>Video path</label><input name="video" required />
+        <label>Audio path</label><input name="audio" required />
+        <label>Output path</label><input name="output" required />
+        <label>Sample rate</label><input name="sample_rate" value="16000" />
+        <label>Analysis seconds</label><input name="analysis_seconds" />
+        <label>Max offset seconds</label><input name="max_offset_seconds" value="120" />
+        <label>Min confidence</label><input name="min_confidence" value="0.2" />
+        <div class="check"><input type="checkbox" name="dry_run" id="dry_run" /><label for="dry_run">Dry run</label></div>
+        <div class="check"><input type="checkbox" name="force" id="vas_force" /><label for="vas_force">Force overwrite</label></div>
+        <button type="submit">Run</button>
+      </form>
+    </div>
 
-  <h2 style="margin-top:16px">Jobs</h2>
-  <div id="jobs-panel">
-    {jobs_html}
+    <aside class="right-panel card">
+      <h2>Jobs</h2>
+      <div id="jobs-panel">
+        {jobs_html}
+      </div>
+    </aside>
   </div>
 </main>
 <script>
