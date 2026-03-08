@@ -52,10 +52,9 @@ def _build_record_cmd(
         input_format,
     ]
     if input_vcodec:
-        cmd += [
-            "-input_format",
-            input_vcodec,
-        ]
+        # dshow expects an input codec via -vcodec; some other backends use -input_format.
+        input_codec_flag = "-vcodec" if input_format == "dshow" else "-input_format"
+        cmd += [input_codec_flag, input_vcodec]
     cmd += [
         "-framerate",
         str(framerate),
