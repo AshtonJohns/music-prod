@@ -37,6 +37,12 @@ The page lets you launch these tools as background jobs and view logs/status:
 - `music-prod-sync-capture`
 - `music-prod-video-audio-sync`
 
+You probably want to run these commands pretty frequently!
+```powershell
+uv lock --upgrade-package yt-dlp
+uv sync
+```
+
 ## Cakewalk Workspace Bootstrap
 
 Use a template-first flow and let the script create song folders + copy assets:
