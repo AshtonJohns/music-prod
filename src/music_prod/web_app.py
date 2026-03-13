@@ -7,6 +7,7 @@ import shlex
 import signal
 import subprocess
 import sys
+import traceback
 import uuid
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -30,6 +31,7 @@ class Job:
     created_at: str = field(default_factory=lambda: datetime.now().isoformat(timespec="seconds"))
     started_at: str | None = None
     finished_at: str | None = None
+    log_file: str | None = None
     output: list[str] = field(default_factory=list)
 
 
@@ -37,6 +39,7 @@ JOBS: dict[str, Job] = {}
 RUNNING_PROCS: dict[str, asyncio.subprocess.Process] = {}
 JOBS_LOCK = asyncio.Lock()
 MAX_LOG_LINES = 400
+LOG_DIR = Path.cwd() / "log"
 
 
 def _value(form: dict[str, str], key: str, default: str = "") -> str:
@@ -180,11 +183,37 @@ async def _read_form_data(request: Request) -> dict[str, str]:
 
 
 async def _append_output(job_id: str, line: str) -> None:
+    log_file: str | None = None
     async with JOBS_LOCK:
         job = JOBS[job_id]
         job.output.append(line)
         if len(job.output) > MAX_LOG_LINES:
             job.output = job.output[-MAX_LOG_LINES:]
+        log_file = job.log_file
+
+    if log_file:
+        try:
+            with Path(log_file).open("a", encoding="utf-8", errors="replace") as handle:
+                handle.write(f"{line}\n")
+        except OSError:
+            # Avoid failing the job if log persistence has transient I/O issues.
+            pass
+
+
+async def _stream_output_lines(job_id: str, stream: asyncio.StreamReader) -> None:
+    pending = ""
+    while True:
+        raw = await stream.read(4096)
+        if not raw:
+            break
+        text = raw.decode(errors="replace").replace("\r\n", "\n").replace("\r", "\n")
+        chunk = pending + text
+        lines = chunk.split("\n")
+        pending = lines.pop()
+        for line in lines:
+            await _append_output(job_id, line.rstrip())
+    if pending:
+        await _append_output(job_id, pending.rstrip())
 
 
 async def _run_job(job_id: str) -> None:
@@ -210,11 +239,7 @@ async def _run_job(job_id: str) -> None:
             RUNNING_PROCS[job_id] = proc
 
         assert proc.stdout is not None
-        while True:
-            raw = await proc.stdout.readline()
-            if not raw:
-                break
-            await _append_output(job_id, raw.decode(errors="replace").rstrip())
+        await _stream_output_lines(job_id, proc.stdout)
 
         return_code = await proc.wait()
         async with JOBS_LOCK:
@@ -224,6 +249,8 @@ async def _run_job(job_id: str) -> None:
             job.finished_at = datetime.now().isoformat(timespec="seconds")
     except Exception as exc:
         await _append_output(job_id, f"runner error: {exc}")
+        for line in traceback.format_exc().rstrip().splitlines():
+            await _append_output(job_id, line)
         async with JOBS_LOCK:
             job = JOBS[job_id]
             job.status = "failed"
@@ -251,6 +278,7 @@ def _render_jobs_html(jobs: list[Job]) -> str:
             <section class="job">
               <div><strong>{id}</strong> | <code>{tool}</code> | <span class="status {status}">{status}</span></div>
               <div>created: {created} | started: {started} | finished: {finished} | rc: {rc}</div>
+              <div>log file: <code>{log_file}</code></div>
               {controls}
               <div><code>{command}</code></div>
               <pre>{logs}</pre>
@@ -263,6 +291,7 @@ def _render_jobs_html(jobs: list[Job]) -> str:
                 started=html.escape(job.started_at or "-"),
                 finished=html.escape(job.finished_at or "-"),
                 rc=html.escape(str(job.return_code) if job.return_code is not None else "-"),
+                log_file=html.escape(job.log_file or "-"),
                 controls=controls,
                 command=command,
                 logs=logs,
@@ -540,11 +569,16 @@ async def run_tool(tool_name: str, request: Request) -> RedirectResponse:
 
     command = [sys.executable, "-m", module, *cli_args]
     job_id = uuid.uuid4().hex[:10]
-    job = Job(id=job_id, tool=tool_name, command=command)
+    LOG_DIR.mkdir(parents=True, exist_ok=True)
+    stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+    log_file = LOG_DIR / f"{stamp}_{job_id}_{tool_name}.log"
+    job = Job(id=job_id, tool=tool_name, command=command, log_file=str(log_file))
 
     async with JOBS_LOCK:
         JOBS[job_id] = job
 
+    await _append_output(job_id, f"[web] log file: {log_file}")
+    await _append_output(job_id, f"[web] command: {' '.join(shlex.quote(part) for part in command)}")
     asyncio.create_task(_run_job(job_id))
     return RedirectResponse(url="/", status_code=303)
 
