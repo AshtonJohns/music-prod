@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 import shutil
 import subprocess
 import sys
@@ -9,10 +10,17 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 
+def utf8_subprocess_env() -> dict[str, str]:
+    env = os.environ.copy()
+    env["PYTHONUTF8"] = "1"
+    env["PYTHONIOENCODING"] = "utf-8"
+    return env
+
+
 def run(cmd: list[str], *, cwd: Path | None = None) -> None:
     """Run a command, streaming stdout/stderr. Raises on failure."""
     print("\n>>", " ".join(cmd))
-    result = subprocess.run(cmd, cwd=str(cwd) if cwd else None)
+    result = subprocess.run(cmd, cwd=str(cwd) if cwd else None, env=utf8_subprocess_env())
     if result.returncode != 0:
         raise RuntimeError(f"Command failed with exit code {result.returncode}: {' '.join(cmd)}")
 

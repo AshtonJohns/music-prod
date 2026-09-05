@@ -42,6 +42,13 @@ MAX_LOG_LINES = 400
 LOG_DIR = Path.cwd() / "log"
 
 
+def _utf8_subprocess_env() -> dict[str, str]:
+    env = os.environ.copy()
+    env["PYTHONUTF8"] = "1"
+    env["PYTHONIOENCODING"] = "utf-8"
+    return env
+
+
 def _value(form: dict[str, str], key: str, default: str = "") -> str:
     return str(form.get(key, default)).strip()
 
@@ -234,6 +241,7 @@ async def _run_job(job_id: str) -> None:
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.STDOUT,
             creationflags=creationflags,
+            env=_utf8_subprocess_env(),
         )
         async with JOBS_LOCK:
             RUNNING_PROCS[job_id] = proc
